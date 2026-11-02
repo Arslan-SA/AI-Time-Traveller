@@ -1,0 +1,27 @@
+# Install once per clone with: pre-commit install
+# Run against every tracked file with: pre-commit run --all-files
+default_stages: [pre-commit]
+fail_fast: false
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.3
+    hooks:
+      - id: ruff
+        name: ruff (lint)
+        args: [--fix]
+        files: ^backend/.*\.pyi?$
+
+  - repo: https://github.com/psf/black
+    rev: 26.10.1
+    hooks:
+      - id: black
+        name: black (format)
+        files: ^backend/.*\.pyi?$
+
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.9.10
+    hooks:
+      - id: prettier
+        name: prettier (format)
+        files: ^frontend/.*\.(css|js|jsx|json|md|scss|ts|tsx|ya?ml)$
