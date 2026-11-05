@@ -9,6 +9,8 @@ from app.db.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.db.models.activity import Activity
+    from app.db.models.github_connection import GithubConnection
+    from app.db.models.scenario import SavedScenario
 
 
 class User(TimestampMixin, Base):
@@ -28,6 +30,17 @@ class User(TimestampMixin, Base):
     )
 
     activities: Mapped[list["Activity"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    github_connection: Mapped["GithubConnection | None"] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        uselist=False,
+    )
+    saved_scenarios: Mapped[list["SavedScenario"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,
