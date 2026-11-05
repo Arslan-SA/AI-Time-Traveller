@@ -13,6 +13,7 @@ numpy>=1.26,<3.0
 scikit-learn>=1.5,<2.0
 statsmodels>=0.14,<1.0
 SQLAlchemy>=2.0,<3.0
+psycopg[binary]>=3.2,<4.0
 
 # Integrations
 httpx>=0.27,<1.0
