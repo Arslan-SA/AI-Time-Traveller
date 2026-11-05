@@ -471,11 +471,25 @@ VITE_API_BASE_URL=http://localhost:8000
 ```bash
 # Terminal 1 — backend
 cd backend
+alembic upgrade head          # create tables and seed built-in metrics
 uvicorn app.main:app --reload --port 8000
 
 # Terminal 2 — frontend
 cd frontend
 npm run dev
+```
+
+The default `DATABASE_URL` is SQLite (`sqlite:///./time_traveler.db`). Set it to
+a PostgreSQL URL (for example `postgresql://user:password@localhost:5432/time_traveler`)
+in production; the `psycopg` driver is already included.
+
+### Database migrations
+
+```bash
+cd backend
+alembic revision --autogenerate -m "describe the change"   # after editing models
+alembic upgrade head                                        # apply migrations
+alembic downgrade -1                                        # roll back one step
 ```
 
 | Service | URL |
