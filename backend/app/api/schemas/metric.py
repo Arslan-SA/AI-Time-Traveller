@@ -23,3 +23,12 @@ class MetricRead(BaseModel):
     name: str
     unit: str
     is_builtin: bool
+
+
+class MetricCreate(BaseModel):
+    """A custom metric definition supplied by a client."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: MetricName
+    unit: MetricUnit
