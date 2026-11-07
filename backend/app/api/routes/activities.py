@@ -1,11 +1,14 @@
 """Activity endpoints."""
 
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
+from datetime import date
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import CurrentUser, DbSession
-from app.api.schemas.activity import ActivityCreate, ActivityRead
+from app.api.schemas.activity import ActivityCreate, ActivityPage, ActivityRead
 from app.db.models import Activity, MetricDefinition
 
 router = APIRouter(prefix="/activities")
@@ -105,3 +108,54 @@ def upsert_activities(
         )
     }
     return [refreshed[activity_id] for activity_id in activity_ids]
+
+
+@router.get("", response_model=ActivityPage)
+def list_activities(
+    current_user: CurrentUser,
+    db: DbSession,
+    from_: Annotated[
+        date | None,
+        Query(alias="from", description="Inclusive start date (YYYY-MM-DD)"),
+    ] = None,
+    to: Annotated[
+        date | None,
+        Query(description="Inclusive end date (YYYY-MM-DD)"),
+    ] = None,
+    metric: Annotated[
+        str | None,
+        Query(min_length=1, max_length=64, description="Filter by metric name"),
+    ] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> ActivityPage:
+    """List the current user's activities, newest first.
+
+    ``from`` and ``to`` are inclusive date bounds. ``total`` counts every row
+    matching the filters before ``limit`` and ``offset`` are applied.
+    """
+    if from_ is not None and to is not None and from_ > to:
+        raise HTTPException(
+            status_code=422,
+            detail="'from' must be on or before 'to'",
+        )
+
+    filters = [Activity.user_id == current_user.id]
+    if from_ is not None:
+        filters.append(Activity.date >= from_)
+    if to is not None:
+        filters.append(Activity.date <= to)
+    if metric is not None:
+        filters.append(Activity.metric.has(MetricDefinition.name == metric))
+
+    total = db.scalar(select(func.count()).select_from(Activity).where(*filters)) or 0
+    items = db.scalars(
+        select(Activity)
+        .options(selectinload(Activity.metric))
+        .where(*filters)
+        .order_by(Activity.date.desc(), Activity.id.desc())
+        .limit(limit)
+        .offset(offset)
+    ).all()
+
+    return ActivityPage(items=items, total=total, limit=limit, offset=offset)
